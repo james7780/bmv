@@ -1,0 +1,18 @@
+RPi dedicated serial (ttyAMA0) setup
+
+1. Remove references to ttyAMA0 from /boot/cmdline.txt
+
+2. Remove login prompt from ttyAMA0 from /etc/inittab (c0mment out the getty ttyAMA0 line)
+
+3. Connect BMV-700 TX to RPi GPIO UART RX pin
+   Connect BMV-700 GND to RPI GPIO GND
+
+4. Configure RPi UART to 19200 baud
+
+
+
+
+
+
+
+
