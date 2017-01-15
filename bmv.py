@@ -5,6 +5,7 @@
 
 import time
 import serial
+import os
 
 # open the USB serial port at 19200 baud
 bmvSerial = serial.Serial("/dev/ttyUSB0", baudrate=19200, timeout=3.0)
@@ -95,6 +96,9 @@ def writeDataToLogFile(ticks) :
 	logFile.write("%s," % dataDict.get("H12", "?"))
 	logFile.write("%s," % dataDict.get("H17", "?"))
 	logFile.write("%s\n" % dataDict.get("H18", "?"))
+	# force flush to disk, as other processes may use the last line of log
+	logFile.flush()
+	os.fsync(logFile.fileno())
 	return
 
 # Previous log tick - used for logging only every 10 seconds

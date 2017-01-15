@@ -19,24 +19,28 @@ height = 480
 image = Image.new("RGB", (width, height), white)
 draw = ImageDraw.Draw(image)
 
-fnt = ImageFont.truetype('Pillow/Tests/fonts/FreeMono.ttf', 10)
+fontSize = 24
+fnt = ImageFont.truetype('Pillow/Tests/fonts/FreeMono.ttf', fontSize)
 
+left = 20
 textFillBlue = (0, 0, 255, 255)
-draw.text((0,0), "MPPT 100/50 Current Status:", fill=textFillBlue, font=fnt)
+draw.text((left,0), "MPPT 100/50 Current Status:", fill=textFillBlue, font=fnt)
 
-y = 40
+y = fontSize * 2
 
 # Read and display the latest MPPT data
 #tfile = open("/home/pi/bmv/bmv.latest", "r")
 tfile = open("/var/tmp/mppt.latest", "r")
 if tfile :
     for line in tfile :
-        draw.text((0,y), line, fill=textFillBlue, font=fnt)
-        y = y + 20
+        s = line.replace("<TD>", "")
+        s = s.replace("</TD>", " ")
+        draw.text((left,y), s, fill=textFillBlue, font=fnt)
+        y = y + fontSize * 1.5
     tfile.close()
 
 # PIL image can be saved as .png .jpg .gif or .bmp file
-filename = "../mpptcurrent.jpg"
+filename = "/var/www/mpptcurrent.jpg"
 image.save(filename)
 
 

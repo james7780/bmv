@@ -19,24 +19,26 @@ height = 480
 image = Image.new("RGB", (width, height), white)
 draw = ImageDraw.Draw(image)
 
-fnt = ImageFont.truetype('Pillow/Tests/fonts/FreeMono.ttf', 10)
+fontSize = 24
+fnt = ImageFont.truetype('Pillow/Tests/fonts/FreeMono.ttf', fontSize)
 
+left = 20
 textFillBlue = (0, 0, 255, 255)
-draw.text((0,0), "BMV-700 Current Status:", fill=textFillBlue, font=fnt)
+draw.text((left,0), "BMV-700 Current Status:", fill=textFillBlue, font=fnt)
 
-y = 40
+y = fontSize * 2
 
 # Read and display the "current/latest" BMV data
 #tfile = open("/home/pi/bmv/bmv.latest", "r")
 tfile = open("/var/tmp/bmv.latest", "r")
 if tfile :
     for line in tfile :
-        draw.text((0,y), line, fill=textFillBlue, font=fnt)
-        y = y + 20
+        draw.text((left, y), line, fill=textFillBlue, font=fnt)
+        y = y + fontSize * 1.5
     tfile.close()
 
 # PIL image can be saved as .png .jpg .gif or .bmp file
-filename = "../bmvcurrent.jpg"
+filename = "/var/www/bmvcurrent.jpg"
 image.save(filename)
 
 

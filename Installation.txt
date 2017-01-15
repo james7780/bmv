@@ -11,10 +11,28 @@ tmpfs	/var/tmp	tmpfs	nodev,nosuid,size=64M	0	0
 
 /home/pi/bmv/bmv.py &
 /home/pi/bmv/mppt.py &
+/home/pi/bmv/rssimagegen.py &       (optional)
 
 
 - Put web pages / web scripts in correct location:
 
-/www/cgi-bin
+/var/www/:
+  index.html
+  index.rss
+
+/var/www/cgi-bin:
+  bmvlatest.py
+  bmvlatestimage.py
+  lasthour.py
+  bmvlasthourimage.py
+  mpptlatest.py
+  mpptlatestimage.py
+
 
 (May have to set up permissions etc)
+
+
+Put background scripts in home/pi/bmv/:
+  bmv.py
+  mppt.py
+  rssimagegen.py

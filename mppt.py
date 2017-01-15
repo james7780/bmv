@@ -5,10 +5,12 @@
 
 import time
 import serial
+import os
 
 # open the GPIO "UART" serial port at 19200 baud
 # TODO : Use and alternate serial port to read the BMV simultaneously
 bmvSerial = serial.Serial("/dev/ttyAMA0", baudrate=19200, timeout=3.0)
+print bmvSerial
 
 # open the log file for appending to
 # 2015-09-20 - Log to RAMDISK mounted on /var/tmp
@@ -47,13 +49,21 @@ def writeDataToCurrentFile(ticks) :
 
 # Write the current data to the log file
 def writeDataToLogFile(ticks) :
-	#"Ticks,V,I,VPV,PPV,CS\n")
+	#"Ticks,V,I,VPV,PPV,CS,H19,H20,H21,H22,H23\n")
 	logFile.write("%.0f," % ticks)
 	logFile.write("%s," % dataDict.get("V", "?"))
 	logFile.write("%s," % dataDict.get("I", "?"))
 	logFile.write("%s," % dataDict.get("VPV", "?"))
 	logFile.write("%s," % dataDict.get("PPV", "?"))
-	logFile.write("%s\n" % dataDict.get("CS", "?"))
+	logFile.write("%s," % dataDict.get("CS", "?"))
+	logFile.write("%s," % dataDict.get("H19", "?"))
+	logFile.write("%s," % dataDict.get("H20", "?"))
+	logFile.write("%s," % dataDict.get("H21", "?"))
+	logFile.write("%s," % dataDict.get("H22", "?"))
+	logFile.write("%s\n" % dataDict.get("H23", "?"))
+	# force flush to disk, as other process may need last line
+	logFile.flush()
+	os.fsync(logFile.fileno())
 	return
 
 # Previous log tick - used for logging only every 10 seconds
@@ -62,7 +72,7 @@ prevLogTick = time.time()
 print "Starting MPPT monitor/logger..."
 while True:
 	s = bmvSerial.readline()
-#	print s
+	print s
 	s = s.strip("\r\n")
 	values = s.split('\t')
 #	print values
