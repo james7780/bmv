@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+# coding: utf-8
 # JH 2017-01-09
 # Run python scripts to generate BMV/MPPT monitor RSS feed 
 
@@ -63,7 +64,7 @@ def decodeWeatherCode(code) :
         return s
 
 # draw a strip of data to the image
-def drawWeatherStrip(draw, y0, fnt, dateLabel, temp, conditionCode, windSpeed, indDir, rain, humidity) :
+def drawWeatherStrip(draw, y0, fnt, dateLabel, temp, conditionCode, windSpeed, windDir, rain, humidity) :
 	draw.rectangle((LEFT, y0, RIGHT, y0 + STRIPHEIGHT), fill=PASTEL_GREEN)
 	ty = y0 + MARGIN
 	tx = LEFT + MARGIN
@@ -72,6 +73,16 @@ def drawWeatherStrip(draw, y0, fnt, dateLabel, temp, conditionCode, windSpeed, i
 	draw.text((tx + 200, ty), str(temp) + '°C ' + conditions, fill=textFillBlack, font=fnt)
 	draw.text((tx + 400, ty), 'Wind ' + windDir + ' ' + str(windSpeed * 3.6) + ' km/h, Rain ' + str(rain) + 'mm, Hum. ' + str(humidity) + '%', fill=textFillBlack, font=fnt)
 
+def formatTimestamp(timeStamp) :
+	if (timeStamp.find('T') > -1) :
+		ts = time.strptime(timeStamp, "%Y-%m-%dT%H:%M:%S")
+		return time.strftime("%a %d %b", ts)
+	else :
+		ts = time.strptime(timeStamp, "%Y-%m-%d")
+		return time.strftime("%a %d %b", ts)
+
+
+
 # generate the weather image
 # must be run once a day at 6am
 def writeWeatherImage() :
@@ -79,15 +90,16 @@ def writeWeatherImage() :
 	# PIL draws in memory only, but the image can be saved
 	image = Image.new("RGB", (WIDTH, HEIGHT), WHITE)
 	draw = ImageDraw.Draw(image)
-	fnt = ImageFont.truetype('Pillow/Tests/fonts/FreeMono.ttf', FONTSIZE)
+	fnt = ImageFont.truetype('Pillow/Tests/fonts/FreeMono.ttf', 12)
 	textFillBlue = (0, 0, 255, 255)
-	drawTitleStrip(draw, PASTEL_BLUE, BLACK, "Weather - Cape Town")
+	drawTitleStrip(draw, PASTEL_BLUE, BLACK, 'Weather - Cape Town', '   ')
 
 	# get weather json data from Foreca
 	url = "http://apitest.foreca.net/?lon=24.934&lat=60.1755&key=8UHAw41oBzi73lyzuSAGu3pyg&format=json"
-	s = urllib2.urlopen(url).read()
-	j = json.opens(s)
-	if (len[j] > 0) :
+	#s = urllib2.urlopen(url).read()
+	s = open('weather_data.txt', 'r').read()
+	j = json.loads(s)
+	if (len(j) > 0) :
 		cc = j['cc']                    # "Current conditions"
 		forecastArray = j['fcd']        # "Forecast data" (array of 10)
 	
@@ -101,12 +113,16 @@ def writeWeatherImage() :
 		windDir = cc['wn']      # 'N', 'SE' etc
 		rain = cc['p']          # mm
 		uv = cc['uv']           # 0 to 11
-		drawWeatherStrip(draw, MARGIN + 60, fnt, timeStamp, temp, cc['s'], windSpeed, windDir, rain, humidity)
+
+		label = "Today, " + formatTimestamp(timeStamp)
+		drawWeatherStrip(draw, MARGIN + 60, fnt, label, temp, cc['s'], windSpeed, windDir, rain, humidity)
 
 		# Display 6-day forecast data
 		y = MARGIN + 60 + STRIPHEIGHT
 		for data in forecastArray[1:6] :
-			drawWeatherStrip(draw, y, fnt, data['dt'], data['t'], data['s'], data['ws'], data['wn'], data['p'], data['rh'])
+			#print data
+			label = formatTimestamp(data['dt'])
+			drawWeatherStrip(draw, y, fnt, label, data['tx'], data['s'], data['ws'], data['wn'], data['px'], data['rx'])
 			y += STRIPHEIGHT
 
 		# draw time stamp
@@ -114,6 +130,12 @@ def writeWeatherImage() :
 
 
 	# Save as JPEG
-	filename = "/var/www/weather.jpg"
+	print ("Saving weather image...")
+	#filename = "/var/www/weather.jpg"
+	filename = "weather.jpg"
 	image.save(filename, quality=90)
+	print ("Done.")
+
+writeWeatherImage()
+
 

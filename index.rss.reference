@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<rss version="2.0" xmlns:media="http://search.yahoo.com/mrss/">
+<channel>
+  <title>Home Monitor</title>
+  <ttl>2</ttl>
+  <link>http://www.w3schools.com</link>
+  <description>Blarg</description>
+  <item>
+    <title>BMV Current</title>
+    <link>http://www.w3schools.com/xml/xml_rss.asp</link>
+    <description>Neww RSS tut</description>
+    <media:content url="http://10.0.0.85/bmvcurrent.jpg" type="image/jpeg" />
+  </item>
+  <item>
+    <title>BMV Last Hour</title>
+    <link>http://www.w3schools.com/xml/xml_rss.asp</link>
+    <description>Another new rss tut</description>
+    <media:content url="http://10.0.0.85/bmvlasthour.jpg" type="image/jpeg" />
+  </item>
+  <item>
+    <title>MPPT Current</title>
+    <link>http://www.w3schools.com/xml/xml_rss.asp</link>
+    <description>Another new rss tut 2</description>
+    <media:content url="http://10.0.0.85/mpptcurrent.jpg" type="image/jpeg" />
+  </item>
+</channel>
+</rss>
+

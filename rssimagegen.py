@@ -1,9 +1,11 @@
 #!/usr/bin/env python
+# coding: utf-8
 # JH 2017-01-09
 # Run python scripts to generate BMV/MPPT monitor RSS feed 
 
 import time
 import os
+import json
 
 # Use python-imaging to create jpgs
 from PIL import Image, ImageDraw, ImageFont
@@ -205,33 +207,6 @@ def writeBMVLastHourImage() :
 
 	
 # Write the MPPT latest image
-#def writeMPPTLatestImage() :
-#	# create empty PIL image and draw "context" to draw on
-#	# PIL draws in memory only, but the image can be saved
-#	image = Image.new("RGB", (width, height), white)
-#	draw = ImageDraw.Draw(image)
-#	fontSize = 24
-#	fnt = ImageFont.truetype('Pillow/Tests/fonts/FreeMono.ttf', fontSize)
-#	left = 20
-#	textFillBlue = (0, 0, 255, 255)
-#	draw.text((left,0), "MPPT 100/50 Current Status:", fill=textFillBlue, font=fnt)
-#	y = fontSize * 2
-#	# Read and display the latest MPPT data
-#	#tfile = open("/home/pi/bmv/bmv.latest", "r")
-#	tfile = open("/var/tmp/mppt.latest", "r")
-#	if tfile :
-#		for line in tfile :
-#			s = line.replace("<TD>", "")
-#			s = s.replace("</TD>", " ")
-#			draw.text((left,y), s, fill=textFillBlue, font=fnt)
-#			y = y + fontSize * 1.5
-#		tfile.close()
-#
-#	# PIL image can be saved as .png .jpg .gif or .bmp file
-#	filename = "/var/www/mpptcurrent.jpg"
-#	image.save(filename)
-
-# Write the MPPT latest image
 def writeMPPTLatestImage() :
 	# create empty PIL image and draw "context" to draw on
 	# PIL draws in memory only, but the image can be saved
@@ -268,12 +243,95 @@ def writeMPPTLatestImage() :
 	filename = "/var/www/mpptcurrent.jpg"
 	image.save(filename, quality=90)
 
+# decode Foreca weather code (eg: "d421")
+def decodeWeatherCode(code) :
+        # First number indicates cloud cover
+        cloudCode = int(code[1])
+        s = ['Clear', 'Almost clear', 'Half cloudy', 'Broken', 'Overcast', 'Thin high clouds', 'Fog'][cloudCode]
+        s += ', '
+        # Second number indicates precipitation rate
+        rainCode = int(code[2])
+        s += ['No rain', 'Slight Rain', 'Showers', 'Rain', 'Thunder'][rainCode]
+        # 3rd number indicates type of precipitation (rain/sleet/snow) - ignore this for Cape Town
+        return s
+
+# draw a strip of data to the image
+def drawWeatherStrip(draw, y0, fnt, dateLabel, temp, conditionCode, windSpeed, windDir, rain, humidity) :
+	draw.rectangle((LEFT, y0, RIGHT, y0 + STRIPHEIGHT), fill=PASTEL_GREEN)
+	ty = y0 + MARGIN
+	tx = LEFT + MARGIN
+	draw.text((tx, ty), dateLabel, fill=textFillBlack, font=fnt)
+	conditions = decodeWeatherCode(conditionCode)
+	draw.text((tx + 180, ty), str(temp) + '\xb0' + 'C ' + conditions, fill=textFillBlack, font=fnt)
+	draw.text((tx + 508, ty), windDir + ' ' + str(int(windSpeed * 3.6)), fill=textFillBlack, font=fnt)
+	draw.text((tx + 608, ty), str(rain) + 'mm', fill=textFillBlack, font=fnt)
+	draw.text((tx + 708, ty), str(humidity) + '%', fill=textFillBlack, font=fnt)
+
+
+# Convert Foreca timestamp to "Tue 5 Jan" format
+def formatTimestamp(timeStamp) :
+	if (timeStamp.find('T') > -1) :
+		ts = time.strptime(timeStamp, "%Y-%m-%dT%H:%M:%S")
+		return time.strftime("%a %d %b", ts)
+	else :
+		ts = time.strptime(timeStamp, "%Y-%m-%d")
+		return time.strftime("%a %d %b", ts)
+
+# generate the weather image
+# must be run once a day at 6am
+def writeWeatherImage() :
+	# create empty PIL image and draw "context" to draw on
+	# PIL draws in memory only, but the image can be saved
+	image = Image.new("RGB", (WIDTH, HEIGHT), WHITE)
+	draw = ImageDraw.Draw(image)
+	fnt = ImageFont.truetype('Pillow/Tests/fonts/FreeMono.ttf', 20)
+	textFillBlue = (0, 0, 255, 255)
+	drawTitleStrip(draw, PASTEL_BLUE, BLACK, 'Weather - Cape Town', '   ')
+
+	# get weather json data from Foreca
+	# cron job gets the data at 6am and puts it in file "/home/pi/weather_data.txt"
+	s = open('/home/pi/bmv/weather_data.txt', 'r').read()
+	j = json.loads(s)
+	if (len(j) > 0) :
+		cc = j['cc']                    # "Current conditions"
+		forecastArray = j['fcd']        # "Forecast data" (array of 10)
+	
+		# Display today's weather
+		timeStamp = cc['dt']
+		temp = cc['t']
+		feelsLike = cc['tf']
+		humidity = cc['rh']
+		dewPoint = cc['dp']
+		windSpeed = cc['ws']    # m/s
+		windDir = cc['wn']      # 'N', 'SE' etc
+		rain = cc['p']          # mm
+		uv = cc['uv']           # 0 to 11
+
+		label = formatTimestamp(timeStamp)
+		drawWeatherStrip(draw, MARGIN * 2 + STRIPHEIGHT, fnt, label, temp, cc['s'], windSpeed, windDir, rain, humidity)
+
+		# Display 6-day forecast data
+		y = STRIPHEIGHT * 2 + MARGIN * 3
+		for data in forecastArray[1:6] :
+			label = formatTimestamp(data['dt'])
+			drawWeatherStrip(draw, y, fnt, label, data['tx'], data['s'], data['ws'], data['wn'], data['p'], data['rx'])
+			y += STRIPHEIGHT
+
+		# draw time stamp
+		draw.text((MARGIN * 2, 400), timeStamp, fill=textFillBlack, font=fnt)
+
+
+	# Save as JPEG
+	filename = "/var/www/weather.jpg"
+	image.save(filename, quality=90)
+
 # Write the rss file
-def writeRSSFile(image1, image2, image3) :
+def writeRSSFile(image1, image2, image3, image4) :
 	tfile = open("/var/www/index.rss", "w")
 	tick1 = time.time()
 	tick2 = tick1 + 1
 	tick3 = tick2 + 1
+	tick4 = tick3 + 1
 	tfile.write('<?xml version="1.0" encoding="UTF-8" ?>\n')
 	tfile.write('<rss version="2.0" xmlns:media="http://search.yahoo.com/mrss/">\n')
 	tfile.write('<channel>\n')
@@ -302,15 +360,23 @@ def writeRSSFile(image1, image2, image3) :
 	tfile.write('    <media:content url="http://10.0.0.85/%s" type="image/jpeg" />\n' % image3)
 	tfile.write('    <guid>%s</guid>\n' % str(tick3))
 	tfile.write('  </item>\n')
+	tfile.write('  <item>\n')
+	tfile.write('    <title>Item 3</title>\n')
+	tfile.write('    <link>http://10.0.0.85/index.html</link>\n')
+	tfile.write('    <description>Weather</description>\n')
+	tfile.write('    <media:content url="http://10.0.0.85/%s" type="image/jpeg" />\n' % image4)
+	tfile.write('    <guid>%s</guid>\n' % str(tick4))
+	tfile.write('  </item>\n')
 	tfile.write('</channel>\n')
 	tfile.write('</rss>\n')
 	tfile.close()
 	return
 
+writeWeatherImage()
 #writeBMVLatestImage()
 #writeBMVLastHourImage()
 #writeMPPTLatestImage()
-#writeRSSFile("bmvcurrent.jpg", "bmvlasthour.jpg", "mpptcurrent.jpg")
+writeRSSFile("bmvcurrent.jpg", "bmvlasthour.jpg", "mpptcurrent.jpg", "weather.jpg")
 
 # wait for other BMV logging processes to actually generate some log data
 print "Waiting 3 minutes for BMV and MPPT logging processes..."
@@ -331,7 +397,8 @@ while True:
 		writeBMVLatestImage()
 		writeBMVLastHourImage()
 		writeMPPTLatestImage()
-		writeRSSFile("bmvcurrent.jpg", "bmvlasthour.jpg", "mpptcurrent.jpg")
+		writeWeatherImage()
+		writeRSSFile("bmvcurrent.jpg", "bmvlasthour.jpg", "mpptcurrent.jpg", "weather.jpg")
 
 
 
