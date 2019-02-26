@@ -248,10 +248,9 @@ def decodeWeatherCode(code) :
         # First number indicates cloud cover
         cloudCode = int(code[1])
         s = ['Clear', 'Almost clear', 'Half cloudy', 'Broken', 'Overcast', 'Thin high clouds', 'Fog'][cloudCode]
-        s += ', '
         # Second number indicates precipitation rate
         rainCode = int(code[2])
-        s += ['No rain', 'Slight Rain', 'Showers', 'Rain', 'Thunder'][rainCode]
+        s += [' ', ', Slight Rain', ', Showers', ', Rain', ', Thunder'][rainCode]
         # 3rd number indicates type of precipitation (rain/sleet/snow) - ignore this for Cape Town
         return s
 
@@ -262,9 +261,9 @@ def drawWeatherStrip(draw, y0, fnt, dateLabel, temp, conditionCode, windSpeed, w
 	tx = LEFT + MARGIN
 	draw.text((tx, ty), dateLabel, fill=textFillBlack, font=fnt)
 	conditions = decodeWeatherCode(conditionCode)
-	draw.text((tx + 180, ty), str(temp) + '\xb0' + 'C ' + conditions, fill=textFillBlack, font=fnt)
-	draw.text((tx + 508, ty), windDir + ' ' + str(int(windSpeed * 3.6)), fill=textFillBlack, font=fnt)
-	draw.text((tx + 608, ty), str(rain) + 'mm', fill=textFillBlack, font=fnt)
+	draw.text((tx + 166, ty), str(temp) + '\xb0' + 'C ' + conditions, fill=textFillBlack, font=fnt)
+	draw.text((tx + 524, ty), windDir + ' ' + str(int(windSpeed * 3.6)), fill=textFillBlack, font=fnt)
+	draw.text((tx + 616, ty), str(rain) + 'mm', fill=textFillBlack, font=fnt)
 	draw.text((tx + 708, ty), str(humidity) + '%', fill=textFillBlack, font=fnt)
 
 
@@ -297,24 +296,26 @@ def writeWeatherImage() :
 		forecastArray = j['fcd']        # "Forecast data" (array of 10)
 	
 		# Display today's weather
-		timeStamp = cc['dt']
-		temp = cc['t']
-		feelsLike = cc['tf']
-		humidity = cc['rh']
-		dewPoint = cc['dp']
-		windSpeed = cc['ws']    # m/s
-		windDir = cc['wn']      # 'N', 'SE' etc
-		rain = cc['p']          # mm
-		uv = cc['uv']           # 0 to 11
+		#timeStamp = cc['dt']
+		#temp = cc['t']
+		#feelsLike = cc['tf']
+		#humidity = cc['rh']
+		#dewPoint = cc['dp']
+		#windSpeed = cc['ws']    # m/s
+		#windDir = cc['wn']      # 'N', 'SE' etc
+		#rain = cc['p']          # mm
+		#uv = cc['uv']           # 0 to 11
 
+		fcd0 = forecastArray[0]
+		timeStamp = fcd0['dt']
 		label = formatTimestamp(timeStamp)
-		drawWeatherStrip(draw, MARGIN * 2 + STRIPHEIGHT, fnt, label, temp, cc['s'], windSpeed, windDir, rain, humidity)
+		drawWeatherStrip(draw, MARGIN * 2 + STRIPHEIGHT, fnt, label, fcd0['tx'], fcd0['s'], fcd0['ws'], fcd0['wn'], fcd0['p'], fcd0['rn'])
 
 		# Display 6-day forecast data
 		y = STRIPHEIGHT * 2 + MARGIN * 3
 		for data in forecastArray[1:6] :
 			label = formatTimestamp(data['dt'])
-			drawWeatherStrip(draw, y, fnt, label, data['tx'], data['s'], data['ws'], data['wn'], data['p'], data['rx'])
+			drawWeatherStrip(draw, y, fnt, label, data['tx'], data['s'], data['ws'], data['wn'], data['p'], data['rn'])
 			y += STRIPHEIGHT
 
 		# draw time stamp
@@ -372,7 +373,7 @@ def writeRSSFile(image1, image2, image3, image4) :
 	tfile.close()
 	return
 
-writeWeatherImage()
+#writeWeatherImage()
 #writeBMVLatestImage()
 #writeBMVLastHourImage()
 #writeMPPTLatestImage()

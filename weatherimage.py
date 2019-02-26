@@ -56,10 +56,9 @@ def decodeWeatherCode(code) :
         # First number indicates cloud cover
         cloudCode = int(code[1])
         s = ['Clear', 'Almost clear', 'Half cloudy', 'Broken', 'Overcast', 'Thin high clouds', 'Fog'][cloudCode]
-        s += ', '
         # Second number indicates precipitation rate
         rainCode = int(code[2])
-        s += ['No rain', 'Slight Rain', 'Showers', 'Rain', 'Thunder'][rainCode]
+        s += [' ', ', Slight Rain', ', Showers', ', Rain', ', Thunder'][rainCode]
         # 3rd number indicates type of precipitation (rain/sleet/snow) - ignore this for Cape Town
         return s
 
